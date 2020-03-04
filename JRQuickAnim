@@ -1,0 +1,82 @@
+import pymel.core as pm
+import maya.cmds as cmds
+
+'''
+Jonny Robinson - Creator (so if it's shit, this is why)
+Useful scripts commands I hope I won't need to repeat which are related to animation
+'''
+
+
+'''
+Grab the range of the animation the animator is currently using
+'''
+def animRange():
+    #Get the playback range
+    frameRangeMin = pm.playbackOptions(query=True,minTime=True)
+    frameRangeMax = pm.playbackOptions(query=True,maxTime=True)
+    
+    return frameRangeMin, frameRangeMax
+
+def getAnimAttrVal():
+    
+    '''
+    Make a function which grabs an objects attribute curve values and stores it in dictonary
+    Should return object  name of attributeName,index,frame Number and attribute value.
+    '''
+    
+    #Get the selected object
+    currentSelection = pm.ls(selection=1)[0]
+
+    #Get the name of attributes which the animator has access to
+    ChannelAttributes = pm.listAttr(currentSelection,keyable=True, u=True, r=True)
+    wantedAttributes =[]
+
+    animationCurveDic = {}
+
+    counter = None
+    minRangeT = animRange()[0]
+    maxRangeT = animRange()[1]
+
+
+    # note there is a attribute called ContextOptions which the riggers use for the context menu,
+    # (select all controller) which I don't need
+    for i in ChannelAttributes:
+        if i == 'contextOptions':
+            pass
+        else:
+            wantedAttributes.append(i)
+     
+    #print wantedAttributes
+
+
+    for i in wantedAttributes:
+        counter = animRange()[0] 
+        
+        #get the current keyframe attribute value
+        keyframeEval = pm.keyframe(currentSelection+"."+i, time = (animRange()[0],), query=True, eval=True)
+        keyframeEvalNotTuple = keyframeEval[0]
+        
+        #add this to the dictonary note I had to place them in a list as it was giving me an error saying it doens't like tuples
+        animationCurveDic[i] = [pm.playbackOptions(query=True,minTime=True), keyframeEvalNotTuple]
+        counter = counter + 1
+        
+        
+        while counter != minRangeT:
+            
+            #add this to the dictonary
+            animationCurveDic[i].append([counter, keyframeEvalNotTuple])
+            
+            counter = counter + 1
+            
+            if counter == maxRangeT:
+                break
+
+    return animationCurveDic        
+
+print getAnimAttrVal()
+
+'''
+value = pm.PyNode(currentSelection).rotateX
+
+test = pm.keyframe(value, time=(25),q=True, eval=True)
+'''
